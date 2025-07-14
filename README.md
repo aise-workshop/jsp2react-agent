@@ -21,7 +21,7 @@
 
 - [ ] **路由生成器 (JspRouterToReactRouterConverter)**:
   - [ ] 开发 AI Agent 读取 JSP 配置文件 (如 `web.xml`) 或代码，自动生成 React Router (`react-router-dom`) 的路由配置。
-- [ ] **JSP 到 React 转换器 (JspToReactConverter)**:
+- [ ] **HTML 到 React 转换器 (WebHtmlToReactConverter)**:
   - [ ] **HTML 提取 (HtmlExtractor)**: 编写 Puppeteer 脚本访问运行中的 JSP 应用，提取页面 HTML。
   - [ ] **HTML 解析与组件化 (HtmlParser, Componentizer)**:
     - [ ] 将提取的 HTML 解析成 DOM 树 (DomTreeParser)。
@@ -29,6 +29,8 @@
   - [ ] **代码转换 (JsxConverter, JstlConverter)**:
     - [ ] 将 HTML 片段转换为 React 组件 (JSX)。
     - [ ] 转换 JSP 标签库 (JSTL) 为对应的 React 写法 (如：`c:if` -> `{condition && ...}`, `c:forEach` -> `.map()`)。
+- [ ] AI 转换代码
+    - [ ] 直接翻译 AI 代码
 
 ### 阶段三：混合模式与逐步迁移
 
