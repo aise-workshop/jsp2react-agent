@@ -13,6 +13,7 @@
     "demo": "node src/cli.js demo",
     "setup": "node src/cli.js setup",
     "validate": "node src/cli.js validate",
+    "fix": "node src/cli.js fix",
     "test": "node src/test.js",
     "dev": "cd fixtures/target && npm run dev",
     "build": "cd fixtures/target && npm run build",

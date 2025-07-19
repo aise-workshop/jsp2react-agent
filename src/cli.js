@@ -286,6 +286,59 @@ program
     }
   });
 
+program
+  .command('fix')
+  .description('修复编译错误')
+  .option('-t, --target <path>', '目标 React 项目路径', './fixtures/target')
+  .option('-v, --verbose', '显示详细输出', false)
+  .action(async (options) => {
+    try {
+      console.log(chalk.blue('🔧 开始修复编译错误...'));
+
+      const { CompilationErrorFixer } = require('./tools/CompilationErrorFixer');
+
+      const fixer = new CompilationErrorFixer({
+        targetDir: path.resolve(options.target),
+        verbose: options.verbose
+      });
+
+      const result = await fixer.runCompilationAndFix();
+
+      console.log(chalk.blue('\n📊 修复结果:'));
+      console.log(`成功: ${result.success}`);
+      console.log(`修复文件数: ${result.fixedFiles.length}`);
+      console.log(`尝试次数: ${result.attempts}`);
+
+      if (result.fixedFiles.length > 0) {
+        console.log(chalk.green('\n✅ 修复的文件:'));
+        result.fixedFiles.forEach(file => {
+          console.log(`  - ${file.file}: ${file.error}`);
+        });
+      }
+
+      if (result.errors && result.errors.length > 0) {
+        console.log(chalk.red('\n❌ 未修复的错误:'));
+        result.errors.forEach(error => {
+          console.log(`  - ${error.file}:${error.line} - ${error.message}`);
+        });
+      }
+
+      if (result.success) {
+        console.log(chalk.green('\n🎉 所有编译错误已修复！'));
+      } else {
+        console.log(chalk.yellow('\n⚠️  部分错误未能修复'));
+        process.exit(1);
+      }
+
+    } catch (error) {
+      console.error(chalk.red('❌ 修复失败:'), error.message);
+      if (options.verbose) {
+        console.error(error.stack);
+      }
+      process.exit(1);
+    }
+  });
+
 // 错误处理
 process.on('unhandledRejection', (reason, promise) => {
   console.error(chalk.red('未处理的 Promise 拒绝:'), reason);
