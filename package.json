@@ -1,0 +1,54 @@
+ {
+  "name": "jsp2react-agent",
+  "version": "1.0.0",
+  "description": "JSP 转 React 的 AI Agent CLI 工具 - 渐进式迁移解决方案",
+  "main": "src/cli.js",
+  "bin": {
+    "jsp2react": "./src/cli.js"
+  },
+  "scripts": {
+    "start": "node src/cli.js",
+    "convert": "node src/cli.js convert",
+    "analyze": "node src/cli.js analyze",
+    "demo": "node src/cli.js demo",
+    "setup": "node src/cli.js setup",
+    "test": "node src/test.js",
+    "dev": "cd fixtures/target && npm run dev",
+    "build": "cd fixtures/target && npm run build",
+    "web": "node src/web/server.js",
+    "full-demo": "node demo.js"
+  },
+  "keywords": [
+    "jsp",
+    "react",
+    "migration",
+    "ai",
+    "agent",
+    "conversion",
+    "legacy",
+    "modernization"
+  ],
+  "author": "phodal",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^11.0.0",
+    "chalk": "^4.1.2",
+    "fs-extra": "^11.1.1",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "jest": "^29.5.0",
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aise-workshop/jsp2react-agent"
+  },
+  "bugs": {
+    "url": "https://github.com/aise-workshop/jsp2react-agent/issues"
+  },
+  "homepage": "https://github.com/aise-workshop/jsp2react-agent#readme"
+}
