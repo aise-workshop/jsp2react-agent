@@ -59,6 +59,9 @@ class JSPToReactAgent {
       // 7. 创建开发服务器配置
       await this.createDevServerConfig();
 
+      // 8. 保存转换结果供验证使用
+      await this.saveConversionResults();
+
       console.log(chalk.green('✅ JSP 转 React 转换完成！'));
       this.printSummary();
 
@@ -403,6 +406,36 @@ module.exports = {
     ];
   }
 };`;
+  }
+
+  /**
+   * 保存转换结果供验证使用
+   */
+  async saveConversionResults() {
+    if (this.options.dryRun) return;
+
+    const resultsPath = path.join(this.options.targetDir, 'conversion-results.json');
+
+    // 简化结果数据，只保留验证需要的信息
+    const simplifiedResults = this.conversionResults.map(result => ({
+      file: {
+        name: result.file?.name,
+        relativePath: result.file?.relativePath,
+        path: result.file?.path
+      },
+      componentName: result.componentName,
+      reactCode: !!result.reactCode, // 只保存是否成功的标志
+      embeddedPath: result.embeddedPath,
+      testPath: result.testPath,
+      error: result.error,
+      success: !!result.reactCode
+    }));
+
+    await fs.writeJson(resultsPath, simplifiedResults, { spaces: 2 });
+
+    if (this.options.verbose) {
+      console.log(chalk.gray(`💾 转换结果已保存: ${resultsPath}`));
+    }
   }
 
   /**

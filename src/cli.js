@@ -184,11 +184,11 @@ program
   .action(async (options) => {
     try {
       console.log(chalk.blue('🎯 运行演示转换...'));
-      
+
       // 使用内置的示例项目
       const sourceDir = path.resolve('./fixtures/source');
       const targetDir = path.resolve('./fixtures/target');
-      
+
       if (!await fs.pathExists(sourceDir)) {
         console.error(chalk.red('❌ 演示项目不存在，请确保在项目根目录运行'));
         process.exit(1);
@@ -202,7 +202,7 @@ program
       });
 
       await agent.convertJSPProject();
-      
+
       console.log(chalk.green('\n🎉 演示转换完成！'));
       console.log(chalk.blue('\n📋 查看结果:'));
       console.log('1. 进入目标目录:', chalk.cyan(`cd ${targetDir}`));
@@ -211,6 +211,74 @@ program
 
     } catch (error) {
       console.error(chalk.red('❌ 演示失败:'), error.message);
+      if (options.verbose) {
+        console.error(error.stack);
+      }
+      process.exit(1);
+    }
+  });
+
+program
+  .command('validate')
+  .description('使用 Puppeteer 验证转换结果')
+  .option('-s, --source <path>', '源 JSP 项目路径', './fixtures/source')
+  .option('-t, --target <path>', '目标 React 项目路径', './fixtures/target')
+  .option('--jsp-url <url>', 'JSP 服务器地址', 'http://localhost:8080')
+  .option('--react-url <url>', 'React 服务器地址', 'http://localhost:3000')
+  .option('--headless', '无头模式运行浏览器', true)
+  .option('--no-headless', '显示浏览器界面')
+  .option('-v, --verbose', '显示详细输出', false)
+  .action(async (options) => {
+    try {
+      console.log(chalk.blue('🎭 开始 Puppeteer 验证...'));
+
+      const { PuppeteerValidator } = require('./tools/PuppeteerValidator');
+
+      // 检查转换结果文件
+      const resultsPath = path.join(path.resolve(options.target), 'conversion-results.json');
+
+      if (!await fs.pathExists(resultsPath)) {
+        console.error(chalk.red('❌ 未找到转换结果文件，请先运行转换'));
+        console.log(chalk.yellow('提示: 运行 npm run convert 或 npm run demo'));
+        process.exit(1);
+      }
+
+      const conversionResults = await fs.readJson(resultsPath);
+
+      if (conversionResults.length === 0) {
+        console.error(chalk.red('❌ 没有转换结果可以验证'));
+        process.exit(1);
+      }
+
+      const validator = new PuppeteerValidator({
+        jspBaseUrl: options.jspUrl,
+        reactBaseUrl: options.reactUrl,
+        headless: options.headless,
+        screenshotDir: path.join(path.resolve(options.target), 'screenshots'),
+        verbose: options.verbose
+      });
+
+      const validationResults = await validator.validateConversion(conversionResults);
+      await validator.close();
+
+      // 显示结果摘要
+      const successful = validationResults.filter(r => r.success).length;
+      const total = validationResults.length;
+
+      console.log(chalk.blue('\n📊 验证结果摘要:'));
+      console.log(`总计: ${total}`);
+      console.log(chalk.green(`成功: ${successful}`));
+      console.log(chalk.red(`失败: ${total - successful}`));
+
+      if (successful === total) {
+        console.log(chalk.green('\n🎉 所有验证通过！'));
+      } else {
+        console.log(chalk.yellow('\n⚠️  部分验证失败，请查看详细报告'));
+        process.exit(1);
+      }
+
+    } catch (error) {
+      console.error(chalk.red('❌ 验证失败:'), error.message);
       if (options.verbose) {
         console.error(error.stack);
       }

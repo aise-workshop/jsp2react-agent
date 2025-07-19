@@ -2,6 +2,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const chalk = require('chalk');
 const { spawn } = require('child_process');
+const { PuppeteerValidator } = require('./PuppeteerValidator');
 
 /**
  * 测试运行器 - 验证转换后的 React 组件
@@ -37,6 +38,9 @@ class TestRunner {
 
       // 5. 运行基本的组件渲染测试
       await this.runComponentTests();
+
+      // 6. 运行 Puppeteer 验证测试
+      await this.runPuppeteerValidation();
 
       console.log(chalk.green('✅ 所有测试通过！'));
       return true;
@@ -239,11 +243,117 @@ class TestRunner {
   }
 
   /**
+   * 运行 Puppeteer 验证测试
+   */
+  async runPuppeteerValidation() {
+    console.log(chalk.gray('🎭 运行 Puppeteer 验证测试...'));
+
+    try {
+      // 检查是否有转换结果可以验证
+      const conversionResultsPath = path.join(this.options.targetDir, 'conversion-results.json');
+
+      if (!await fs.pathExists(conversionResultsPath)) {
+        console.log(chalk.yellow('⚠️  未找到转换结果，跳过 Puppeteer 验证'));
+        return;
+      }
+
+      const conversionResults = await fs.readJson(conversionResultsPath);
+
+      if (conversionResults.length === 0) {
+        console.log(chalk.yellow('⚠️  没有转换结果，跳过 Puppeteer 验证'));
+        return;
+      }
+
+      const validator = new PuppeteerValidator({
+        jspBaseUrl: 'http://localhost:8080',
+        reactBaseUrl: 'http://localhost:3000',
+        headless: true,
+        screenshotDir: path.join(this.options.targetDir, 'screenshots'),
+        verbose: this.options.verbose
+      });
+
+      // 检查服务器是否运行
+      const serversRunning = await this.checkServers(validator.options);
+
+      if (!serversRunning.jsp && !serversRunning.react) {
+        console.log(chalk.yellow('⚠️  JSP 和 React 服务器都未运行，跳过 Puppeteer 验证'));
+        console.log(chalk.gray('提示: 启动服务器后运行 npm test -- --puppeteer'));
+        return;
+      }
+
+      console.log(chalk.blue('🚀 开始 Puppeteer 验证...'));
+
+      const validationResults = await validator.validateConversion(conversionResults);
+
+      await validator.close();
+
+      // 显示验证结果摘要
+      const successful = validationResults.filter(r => r.success).length;
+      const total = validationResults.length;
+
+      if (successful === total) {
+        console.log(chalk.green(`✅ Puppeteer 验证通过 (${successful}/${total})`));
+      } else {
+        console.log(chalk.yellow(`⚠️  Puppeteer 验证部分通过 (${successful}/${total})`));
+
+        // 显示失败的验证
+        validationResults.filter(r => !r.success).forEach(result => {
+          console.log(chalk.red(`  ❌ ${result.fileName}: ${result.error}`));
+        });
+      }
+
+    } catch (error) {
+      console.warn(chalk.yellow(`⚠️  Puppeteer 验证失败: ${error.message}`));
+      if (this.options.verbose) {
+        console.error(error.stack);
+      }
+    }
+  }
+
+  /**
+   * 检查服务器是否运行
+   */
+  async checkServers(options) {
+    const results = {
+      jsp: false,
+      react: false
+    };
+
+    try {
+      // 检查 JSP 服务器
+      const jspResponse = await fetch(options.jspBaseUrl, {
+        method: 'HEAD',
+        timeout: 5000
+      });
+      results.jsp = jspResponse.ok;
+    } catch (error) {
+      // JSP 服务器未运行
+    }
+
+    try {
+      // 检查 React 服务器
+      const reactResponse = await fetch(options.reactBaseUrl, {
+        method: 'HEAD',
+        timeout: 5000
+      });
+      results.react = reactResponse.ok;
+    } catch (error) {
+      // React 服务器未运行
+    }
+
+    if (this.options.verbose) {
+      console.log(chalk.gray(`服务器状态: JSP=${results.jsp ? '运行' : '停止'}, React=${results.react ? '运行' : '停止'}`));
+    }
+
+    return results;
+  }
+
+  /**
    * 生成测试报告
    */
   async generateReport(results) {
     const reportPath = path.join(this.options.targetDir, 'test-report.json');
-    
+
     const report = {
       timestamp: new Date().toISOString(),
       results,
